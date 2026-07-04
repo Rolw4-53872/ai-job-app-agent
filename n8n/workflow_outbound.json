@@ -1,0 +1,134 @@
+{
+  "name": "AI Job Agent - Outbound Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-application",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/companies/research",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{$json.body.company_name}}"
+            },
+            {
+              "name": "website",
+              "value": "={{$json.body.company_website}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2",
+      "name": "HTTP: Research Company",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/emails/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "application_id",
+              "value": "={{$json.body.application_id}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3",
+      "name": "HTTP: Generate Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "path": "email-approved-webhook",
+        "options": {}
+      },
+      "id": "4",
+      "name": "Wait For Approval Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/emails/={{$json.body.email_id}}/send",
+        "options": {}
+      },
+      "id": "5",
+      "name": "HTTP: Send Email via Gmail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Research Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Research Company": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Generate Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Generate Email": {
+      "main": [
+        [
+          {
+            "node": "Wait For Approval Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait For Approval Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Send Email via Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}

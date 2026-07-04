@@ -1,0 +1,30 @@
+# Python Caches & Environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.pytest_cache/
+
+# Node modules & builds
+node_modules/
+dist/
+.eslintcache
+
+# SQLite local testing databases
+*.db
+*.sqlite3
+
+# Local credentials & files
+backend/uploads/*
+!backend/uploads/.gitkeep
+token.json
+.env
+
+# Docker data & system files
+.docker/
+.DS_Store
+Thumbs.db

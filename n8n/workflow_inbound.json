@@ -1,0 +1,126 @@
+{
+  "name": "AI Job Agent - Inbound Pipeline (Replies)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": true,
+        "filters": {
+          "q": "is:unread"
+        },
+        "options": {}
+      },
+      "id": "1",
+      "name": "Gmail Trigger (New Message)",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/replies/webhook",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "gmail_message_id",
+              "value": "={{$json.id}}"
+            },
+            {
+              "name": "sender",
+              "value": "={{$json.from.value[0].address}}"
+            },
+            {
+              "name": "subject",
+              "value": "={{$json.subject}}"
+            },
+            {
+              "name": "body",
+              "value": "={{$json.text}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2",
+      "name": "HTTP: Analyze Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.priority == 'High' || $json.priority == 'Urgent'}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "IF: High Priority Reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "phoneNumberId": "your-whatsapp-phone-number-id",
+        "recipientPhoneNumber": "={{$json.sender}}",
+        "text": "🚨 *AI Job Agent Alert!*\nNew critical response from recruiter!\n\n🏢 Company: {{$json.sender}}\n📝 Summary: {{$json.summary}}\n⚠️ Priority: {{$json.priority}}\n⚡ Action: Check approvals page to reply.",
+        "additionalFields": {}
+      },
+      "id": "4",
+      "name": "WhatsApp Cloud API Send",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [850, 200]
+    }
+  ],
+  "connections": {
+    "Gmail Trigger (New Message)": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Analyze Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Analyze Reply": {
+      "main": [
+        [
+          {
+            "node": "IF: High Priority Reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: High Priority Reply?": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Cloud API Send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}

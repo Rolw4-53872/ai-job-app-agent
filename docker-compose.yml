@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: job_agent_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: job_agent
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: job_agent_backend
+    restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/workspace
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/job_agent
+      - SECRET_KEY=supersecretkeychangeinproduction
+      - MOCK_MODE=True # Toggle to False when real API credentials are set in .env
+      - OPENAI_API_KEY=
+      - OPENAI_MODEL=gpt-4o
+      - GMAIL_CLIENT_ID=
+      - GMAIL_CLIENT_SECRET=
+      - WHATSAPP_ACCESS_TOKEN=
+      - WHATSAPP_PHONE_NUMBER_ID=
+      - WHATSAPP_RECIPIENT_PHONE=
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: job_agent_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/workspace
+      - /workspace/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
